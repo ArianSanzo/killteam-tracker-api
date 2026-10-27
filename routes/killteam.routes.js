@@ -48,17 +48,17 @@ router.delete("/matchs/:id", (req, res) => {
     res.send(`Eliminando partida ${id}`)
 });
 
-router.get("/wrules", (req, res) => {res.send("Obteniendo efectos de armas")});
-router.post("/wrules", (req, res) => {res.send("Creando efecto de armas")});
-router.get("/wrules/:id", (req, res) => {
+router.get("/weapon-rules", (req, res) => {res.send("Obteniendo efectos de armas")});
+router.post("/weapon-rules", (req, res) => {res.send("Creando efecto de armas")});
+router.get("/weapon-rules/:id", (req, res) => {
     const { id } = req.params;
     res.send(`Obteniendo efecto ${id} de armas`)
 });
-router.put("/wrules/:id", (req, res) => {
+router.put("/weapon-rules/:id", (req, res) => {
     const { id } = req.params;
     res.send(`Actualizando efecto ${id} de armas`)
 });
-router.delete("/wrules/:id", (req, res) => {
+router.delete("/weapon-rules/:id", (req, res) => {
     const { id } = req.params;
     res.send(`Eliminando efecto ${id} de armas`)
 });

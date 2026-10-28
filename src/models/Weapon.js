@@ -25,6 +25,9 @@ export const Weapon = sequelize.define(
         damage: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        range: {
+            type: DataTypes.INTEGER
         }
     },
     { 

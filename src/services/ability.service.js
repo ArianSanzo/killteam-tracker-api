@@ -1,4 +1,4 @@
-import { Ability } from "../models/Ability";
+import { Ability } from "../models/Ability.js";
 
 export const createAbility = async (req, res) => {
     const { name, description } = req.body;

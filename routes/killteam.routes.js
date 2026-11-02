@@ -1,11 +1,11 @@
 import { Router } from 'express';
 
-import { createUser, deleteUser, findUser, findUsers, updateUser } from '../src/models/services/user.service.js';
-import { createOperative, deleteOperative, findOperative, findOperatives, updateOperative } from '../src/models/services/operative.service.js';
-import { createWeapon, deleteWeapon, updateWeapon, findWeapon, findWeapons } from '../src/models/services/weapon.service.js';
-import { createMatch, updateMatch, deleteMatch, findMatch, findMatches } from '../src/models/services/match.service.js';
-import { createRule, updateRule, deleteRule, findRule, findRules } from '../src/models/services/rule.service.js';
-import { createAbility, updateAbility, deleteAbility, findAbilities, findAbility } from '../src/models/services/ability.service.js';
+import { createUser, deleteUser, findUser, findUsers, updateUser } from '../src/services/user.service.js';
+import { createOperative, deleteOperative, findOperative, findOperatives, updateOperative } from '../src/services/operative.service.js';
+import { createWeapon, deleteWeapon, updateWeapon, findWeapon, findWeapons } from '../src/services/weapon.service.js';
+import { createMatch, updateMatch, deleteMatch, findMatch, findMatches } from '../src/services/match.service.js';
+import { createRule, updateRule, deleteRule, findRule, findRules } from '../src/services/rule.service.js';
+import { createAbility, updateAbility, deleteAbility, findAbilities, findAbility } from '../src/services/ability.service.js';
 
 const router = Router();
 

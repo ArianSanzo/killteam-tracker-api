@@ -1,4 +1,4 @@
-import { Rule } from "../Rule";
+import { Rule } from "../models/Rule.js";
 
 export const createRule = async (req, res) => {
     const { name, description } = req.body;

@@ -1,4 +1,4 @@
-import { Match } from "../Match";
+import { Match } from "../models/Match.js";
 
 export const createMatch = async (req, res) => {
     const { name, date, userId } = req.body;

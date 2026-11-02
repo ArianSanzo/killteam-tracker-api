@@ -1,4 +1,4 @@
-import { Operative } from "../Operative";
+import { Operative } from "../models/Operative.js";
 
 export const findOperatives = async (req, res) => {
     const operatives = await Operative.findAll();

@@ -1,4 +1,4 @@
-import { Weapon } from "../models/Weapon";
+import { Weapon } from "../models/Weapon.js";
 
 export const createWeapon = async (req, res) => {
     const { name, attack, hit, damage, range } = req.body;

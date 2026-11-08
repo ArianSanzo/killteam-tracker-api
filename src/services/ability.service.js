@@ -33,4 +33,4 @@ export const findAbility = async (req, res) => {
   return res.send(ability);
 };
 
-export const findAbilities = async (_req, res) => res.send(await Ability.findAll({ order: [["name", "ASC"]] }));
+export const findAbilities = async (req, res) => res.send(await Ability.findAll({ order: [["name", "ASC"]] }));

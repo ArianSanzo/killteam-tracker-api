@@ -37,15 +37,19 @@ router.get("/abilities/:id", findAbility);
 router.post("/team", requireAuth, admin, createTeam);
 router.put("/team/:id", requireAuth, admin, updateTeam);
 router.delete("/team/:id", requireAuth, admin, deleteTeam);
+
 router.post("/operatives", requireAuth, admin, createOperative);
 router.put("/operatives/:id", requireAuth, admin, updateOperative);
 router.delete("/operatives/:id", requireAuth, admin, deleteOperative);
+
 router.post("/weapons", requireAuth, admin, createWeapon);
 router.put("/weapons/:id", requireAuth, admin, updateWeapon);
 router.delete("/weapons/:id", requireAuth, admin, deleteWeapon);
+
 router.post("/rules", requireAuth, admin, createRule);
 router.put("/rules/:id", requireAuth, admin, updateRule);
 router.delete("/rules/:id", requireAuth, admin, deleteRule);
+
 router.post("/abilities", requireAuth, admin, createAbility);
 router.put("/abilities/:id", requireAuth, admin, updateAbility);
 router.delete("/abilities/:id", requireAuth, admin, deleteAbility);

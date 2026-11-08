@@ -34,11 +34,11 @@ router.get("/weapons/:id", findWeapon);
 router.put("/weapons/:id", updateWeapon);
 router.delete("/weapons/:id", deleteWeapon);
 
-router.get("/matchs", findMatches);
-router.post("/matchs", createMatch);
-router.get("/matchs/:id", findMatch);
-router.put("/matchs/:id", updateMatch);
-router.delete("/matchs/:id", deleteMatch);
+router.get("/matches", findMatches);
+router.post("/matches", createMatch);
+router.get("/matches/:id", findMatch);
+router.put("/matches/:id", updateMatch);
+router.delete("/matches/:id", deleteMatch);
 
 router.get("/rules", findRules);
 router.post("/rules", createRule);

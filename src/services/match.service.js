@@ -4,6 +4,8 @@ import { GameTeam } from "../models/GameTeam.js";
 import { GameOperative } from "../models/GameOperative.js";
 import { Operative } from "../models/Operative.js";
 import { OperativeWeapon } from "../models/OperativeWeapons.js";
+import { Team } from "../models/Team.js";
+import { Weapon } from "../models/Weapon.js";
 
 const invalidSelection = (message) =>
   Object.assign(new Error(message), { status: 400 });
@@ -51,7 +53,7 @@ export const createMatch = async (req, res) => {
   const { name, date, userId, teams } = req.body;
 
   if (!name || !date || !userId) {
-    return res.status(400).json({
+    return res.status(400).send({
       message: "Los campos name, date y userId son requeridos",
     });
   }
@@ -66,13 +68,13 @@ export const createMatch = async (req, res) => {
         team.operatives.length === 0
     )
   ) {
-    return res.status(400).json({
+    return res.status(400).send({
       message: "Se requieren dos equipos con teamId y al menos un operativo cada uno",
     });
   }
 
   if (Number(teams[0].teamId) === Number(teams[1].teamId)) {
-    return res.status(400).json({ message: "Los dos equipos deben ser distintos" });
+    return res.status(400).send({ message: "Los dos equipos deben ser distintos" });
   }
 
   if (
@@ -82,7 +84,7 @@ export const createMatch = async (req, res) => {
       )
     )
   ) {
-    return res.status(400).json({
+    return res.status(400).send({
       message: "Cada operativo debe incluir operativeId y weaponId",
     });
   }
@@ -119,14 +121,14 @@ export const createMatch = async (req, res) => {
       };
     });
 
-    return res.status(201).json(result);
+    return res.status(201).send(result);
   } catch (error) {
     if (error.status === 400) {
-      return res.status(400).json({ message: error.message });
+      return res.status(400).send({ message: error.message });
     }
 
     console.error("Error al crear la partida:", error);
-    return res.status(500).json({ message: "No se pudo crear la partida" });
+    return res.status(500).send({ message: "No se pudo crear la partida" });
   }
 };
 
@@ -175,7 +177,20 @@ export const findMatches = async (req, res) => {
 
 export const findMatch = async (req, res) => {
     const { id } = req.params;
-    const match = await Match.findByPk(id);
+    const match = await Match.findByPk(id, {
+    include: [
+      {
+        model: GameTeam,
+        include: [
+          { model: Team },
+          {
+            model: GameOperative,
+            include: [Operative, Weapon],
+          },
+        ],
+      },
+    ],
+    });
     if (!match) {
         return res.status(404).send({ message: "Partida no encontrada"})
     }

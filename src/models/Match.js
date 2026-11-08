@@ -17,7 +17,12 @@ export const Match = sequelize.define(
         date: {
             type: DataTypes.DATE,
             allowNull: false
-        }
+        },
+        isFinished: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
     },
     { 
         timestamps: false,

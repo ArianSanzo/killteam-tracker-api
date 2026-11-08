@@ -6,6 +6,11 @@ import { Operative } from "../models/Operative.js";
 import { OperativeWeapon } from "../models/OperativeWeapons.js";
 import { Team } from "../models/Team.js";
 import { Weapon } from "../models/Weapon.js";
+import { getRoleKey } from "../middleware/auth.js";
+
+const canManageMatch = (user, match) =>
+  ["admin", "superadmin"].includes(getRoleKey(user?.role)) ||
+  Number(user?.id) === Number(match?.userId);
 
 const invalidSelection = (message) =>
   Object.assign(new Error(message), { status: 400 });
@@ -50,11 +55,11 @@ const createGameOperatives = async (team, gameTeam, transaction) => {
 };
 
 export const createMatch = async (req, res) => {
-  const { name, date, userId, teams } = req.body;
+  const { name, date, teams } = req.body;
 
-  if (!name || !date || !userId) {
+  if (!name || !date || !req.user?.id) {
     return res.status(400).send({
-      message: "Los campos name, date y userId son requeridos",
+      message: "Los campos name y date son requeridos",
     });
   }
 
@@ -92,7 +97,7 @@ export const createMatch = async (req, res) => {
   try {
     const result = await sequelize.transaction(async (transaction) => {
       const newMatch = await Match.create(
-        { name, date, userId },
+        { name, date, userId: req.user.id },
         { transaction }
       );
 
@@ -134,9 +139,9 @@ export const createMatch = async (req, res) => {
 
 export const updateMatch = async (req, res) => {
     const { id } = req.params;
-    const { name, date, userId } = req.body;
-    if (!name || !date || !userId) {
-        return res.status(400).send({ message: "Los campos name, date y userId son requeridos" });
+    const { name, date } = req.body;
+    if (!name || !date) {
+        return res.status(400).send({ message: "Los campos name y date son requeridos" });
     }
 
     const match = await Match.findByPk(id);
@@ -144,16 +149,18 @@ export const updateMatch = async (req, res) => {
     if (!match) {
         return res.status(404).send({ message: "Partida no encontrada"})
     }
+    if (!canManageMatch(req.user, match)) {
+        return res.status(403).send({ message: "No tienes permiso para editar esta partida." });
+    }
 
     await match.update({
         name,
-        date,
-        userId
+        date
     });
 
     await match.save();
 
-    res.json(match);
+    res.send(match);
 };
 
 export const deleteMatch = async (req, res) => {
@@ -165,14 +172,21 @@ export const deleteMatch = async (req, res) => {
         return res.status(404).send({ message: "Partida no encontrada"})
     }
 
+    if (!canManageMatch(req.user, match)) {
+        return res.status(403).send({ message: "No tienes permiso para eliminar esta partida." });
+    }
+
     await match.destroy();
 
     res.send(`Eliminando partida ${id}`)
 };
 
 export const findMatches = async (req, res) => {
-    const matchs = await Match.findAll();
-    res.json(matchs);
+    const where = ["admin", "superadmin"].includes(getRoleKey(req.user?.role))
+      ? {}
+      : { userId: req.user.id };
+    const matchs = await Match.findAll({ where });
+    res.send(matchs);
 };
 
 export const findMatch = async (req, res) => {
@@ -194,5 +208,8 @@ export const findMatch = async (req, res) => {
     if (!match) {
         return res.status(404).send({ message: "Partida no encontrada"})
     }
-    res.json(match);
+    if (!canManageMatch(req.user, match)) {
+        return res.status(403).send({ message: "No tienes permiso para ver esta partida." });
+    }
+    res.send(match);
 };

@@ -3,6 +3,7 @@ import cors from "cors";
 
 import { PORT } from './config.js';
 import { sequelize } from './db.js';
+import { initializeAuth } from './services/auth.service.js';
 
 import "./models/Ability.js"
 import "./models/GameOperative.js"
@@ -31,6 +32,7 @@ app.use(killteamRoutes);
 
 try {
     await sequelize.sync();
+    await initializeAuth();
     app.listen(PORT, () => {
         console.log(`Server listening on port ${PORT}`);
     });

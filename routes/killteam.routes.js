@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, register, currentUser } from "../src/services/auth.service.js";
+import { login, register, currentUser, updateCurrentUser } from "../src/services/auth.service.js";
 import { requireAuth, requireRole } from "../src/middleware/auth.js";
 import { findUsers, findRoles, updateUserRole, deleteUser } from "../src/services/user.service.js";
 import { createOperative, deleteOperative, findOperative, findOperatives, updateOperative } from "../src/services/operative.service.js";
@@ -8,6 +8,7 @@ import { createMatch, updateMatch, deleteMatch, findMatch, findMatches } from ".
 import { createRule, updateRule, deleteRule, findRule, findRules } from "../src/services/rule.service.js";
 import { createAbility, updateAbility, deleteAbility, findAbilities, findAbility } from "../src/services/ability.service.js";
 import { createTeam, updateTeam, deleteTeam, findTeam, findTeams } from "../src/services/team.service.js";
+import { continueMatch, saveTurningPoint, updateGameOperativeWounds, updateMatchFinished } from "../src/services/game-state.service.js";
 
 const router = Router();
 const admin = requireRole("admin", "superadmin");
@@ -15,6 +16,7 @@ const admin = requireRole("admin", "superadmin");
 router.post("/auth/register", register);
 router.post("/auth/login", login);
 router.get("/auth/me", requireAuth, currentUser);
+router.patch("/auth/me", requireAuth, updateCurrentUser);
 
 router.get("/users", requireAuth, requireRole("superadmin"), findUsers);
 router.get("/roles", requireAuth, requireRole("superadmin"), findRoles);
@@ -50,6 +52,10 @@ router.delete("/abilities/:id", requireAuth, admin, deleteAbility);
 
 router.get("/matches", requireAuth, findMatches);
 router.post("/matches", requireAuth, createMatch);
+router.get("/matches/:matchId/continue", requireAuth, continueMatch);
+router.put("/matches/:matchId/game-teams/:gameTeamId/turning-points/:turningPoint", requireAuth, saveTurningPoint);
+router.patch("/matches/:matchId/game-teams/:gameTeamId/operatives/:gameOperativeId/wounds", requireAuth, updateGameOperativeWounds);
+router.patch("/matches/:matchId/finished", requireAuth, updateMatchFinished);
 router.get("/matches/:id", requireAuth, findMatch);
 router.put("/matches/:id", requireAuth, updateMatch);
 router.delete("/matches/:id", requireAuth, deleteMatch);

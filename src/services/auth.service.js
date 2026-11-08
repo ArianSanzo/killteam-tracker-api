@@ -42,7 +42,9 @@ export const initializeAuth = async () => {
 export const login = async (req, res) => {
   const email = String(req.body.email ?? "").trim().toLowerCase();
   const password = String(req.body.password ?? "");
-  if (!email || !password) return res.status(400).send({ message: "Completa email y contraseña." });
+  if (!email || !password || Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).send({ message: "Completa email y contraseña (máximo 72 bytes)." });
+  }
 
   const user = await User.findOne({ where: { email }, include: [Role] });
   if (!user) return res.status(401).send({ message: "Email o contraseña incorrectos." });
@@ -57,8 +59,8 @@ export const register = async (req, res) => {
   const name = String(req.body.name ?? "").trim();
   const email = String(req.body.email ?? "").trim().toLowerCase();
   const password = String(req.body.password ?? "");
-  if (!name || !email || password.length < 8) {
-    return res.status(400).send({ message: "Indica nombre, email y contraseña de al menos 8 caracteres." });
+  if (!name || !email || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).send({ message: "Indica un nombre, un email válido y una contraseña de 8 a 72 bytes." });
   }
   const existing = await User.findOne({ where: { email } });
   if (existing) return res.status(409).send({ message: "Ya existe una cuenta con ese email." });
@@ -76,3 +78,38 @@ export const register = async (req, res) => {
 };
 
 export const currentUser = (req, res) => res.send(toPublicUser(req.user));
+
+export const updateCurrentUser = async (req, res) => {
+  const { currentPassword } = req.body;
+  const changes = {};
+
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim();
+    if (!name) return res.status(400).send({ message: "El nombre no puede quedar vacío." });
+    changes.name = name;
+  }
+
+  if (req.body.email !== undefined) {
+    const email = String(req.body.email).trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).send({ message: "Indica un email válido." });
+    changes.email = email;
+  }
+
+  if (req.body.password !== undefined) {
+    const password = String(req.body.password);
+    if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+      return res.status(400).send({ message: "La nueva contraseña debe tener entre 8 y 72 bytes." });
+    }
+    changes.password = password;
+  }
+
+  if (!Object.keys(changes).length) return res.status(400).send({ message: "Indica al menos un dato para actualizar." });
+  if ((changes.email || changes.password) && !await verifyPassword(String(currentPassword ?? ""), req.user.password)) {
+    return res.status(401).send({ message: "La contraseña actual no es correcta." });
+  }
+  if (changes.password) changes.password = await hashPassword(changes.password);
+
+  await req.user.update(changes);
+  await req.user.reload({ include: [Role] });
+  return res.send(toPublicUser(req.user));
+};

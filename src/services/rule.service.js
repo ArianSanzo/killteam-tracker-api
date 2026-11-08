@@ -1,58 +1,36 @@
 import { Rule } from "../models/Rule.js";
+import { WeaponRule } from "../models/WeaponRules.js";
+
+const valid = (body) => typeof body.name === "string" && body.name.trim() && typeof body.description === "string" && body.description.trim();
 
 export const createRule = async (req, res) => {
-    const { name, description } = req.body;
-    if (!name || !description){
-        return res.status(400).send({ message: "Campos name y description requeridos" })
-    }
-    const newRule = await Rule.create({
-        name,
-        description
-    });
-    res.json(newRule);
+  if (!valid(req.body)) return res.status(400).send({ message: "Campos name y description requeridos." });
+  const rule = await Rule.create({ name: req.body.name.trim(), description: req.body.description });
+  return res.status(201).send(rule);
 };
 
 export const updateRule = async (req, res) => {
-    const { id } = req.params;
-    const { name, description } = req.body;
-    if (!name || !description){
-        return res.status(400).send({ message: "Campos name y description requeridos" })
-    }
-    const rule = await Rule.findByPk(id);
-    if(!rule){
-        return res.status(404).send({ message: "Regla no encontrada" })
-    }
-    await rule.update({
-        name,
-        description
-    });
-
-    await rule.save();
-
-    res.json(rule);
+  if (!valid(req.body)) return res.status(400).send({ message: "Campos name y description requeridos." });
+  const rule = await Rule.findByPk(req.params.id);
+  if (!rule) return res.status(404).send({ message: "Regla no encontrada." });
+  await rule.update({ name: req.body.name.trim(), description: req.body.description });
+  return res.send(rule);
 };
 
 export const deleteRule = async (req, res) => {
-    const { id } = req.params;
-    const rule = await Rule.findByPk(id);
-    if(!rule){
-        return res.status(404).send({ message: "Regla no encontrada" })
-    }
-    await rule.destroy();
-
-    res.send(`Eliminando efecto ${id} de armas`)
+  const rule = await Rule.findByPk(req.params.id);
+  if (!rule) return res.status(404).send({ message: "Regla no encontrada." });
+  if (await WeaponRule.count({ where: { ruleId: rule.id } })) {
+    return res.status(409).send({ message: "No se puede eliminar una regla asignada a armas." });
+  }
+  await rule.destroy();
+  return res.status(204).end();
 };
 
-export const findRules = async (req, res) => {
-    const rules = await Rule.findAll();
-    res.json(rules);
-};
+export const findRules = async (_req, res) => res.send(await Rule.findAll({ order: [["name", "ASC"]] }));
 
 export const findRule = async (req, res) => {
-    const { id } = req.params;
-    const rule = await Rule.findByPk(id);
-    if(!rule){
-        return res.status(404).send({ message: "Regla no encontrada" })
-    }
-    res.json(rule);
+  const rule = await Rule.findByPk(req.params.id);
+  if (!rule) return res.status(404).send({ message: "Regla no encontrada." });
+  return res.send(rule);
 };

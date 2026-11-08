@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { User } from "../models/User.js";
 import { Role } from "../models/Role.js";
 import { getRoleKey } from "../middleware/auth.js";
@@ -41,7 +42,8 @@ export const updateUserRole = async (req, res) => {
   if (!assignableRoles.has(normalizeRole(role.name))) return res.status(400).send({ message: "El rango seleccionado no es válido." });
 
   if (getRoleKey(user.role) === "superadmin" && getRoleKey(role) !== "superadmin") {
-    const superadminCount = await User.count({ where: { roleId: user.roleId } });
+    const superadminRoleIds = (await Role.findAll()).filter((item) => getRoleKey(item) === "superadmin").map((item) => item.id);
+    const superadminCount = await User.count({ where: { roleId: { [Op.in]: superadminRoleIds } } });
     if (superadminCount <= 1) return res.status(409).send({ message: "Debe quedar al menos un superadmin." });
   }
 
@@ -54,7 +56,8 @@ export const deleteUser = async (req, res) => {
   if (!user) return res.status(404).send({ message: "Usuario no encontrado." });
   if (Number(user.id) === Number(req.user.id)) return res.status(409).send({ message: "No puedes eliminar tu propia cuenta desde esta pantalla." });
   if (getRoleKey(user.role) === "superadmin") {
-    const superadminCount = await User.count({ where: { roleId: user.roleId } });
+    const superadminRoleIds = (await Role.findAll()).filter((item) => getRoleKey(item) === "superadmin").map((item) => item.id);
+    const superadminCount = await User.count({ where: { roleId: { [Op.in]: superadminRoleIds } } });
     if (superadminCount <= 1) return res.status(409).send({ message: "Debe quedar al menos un superadmin." });
   }
   await user.destroy();

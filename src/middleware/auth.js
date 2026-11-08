@@ -2,8 +2,10 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { Role } from "../models/Role.js";
 
-const SECRET = process.env.JWT_SECRET;
-if (!SECRET) throw new Error("Configura JWT_SECRET en el entorno antes de iniciar el servidor.");
+const getSecret = () => {
+  if (!process.env.JWT_SECRET) throw new Error("Configura JWT_SECRET en el entorno antes de iniciar el servidor.");
+  return process.env.JWT_SECRET;
+};
 
 const normalizeRole = (name = "") => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 const roleKey = (role) => {
@@ -22,19 +24,22 @@ export const toPublicUser = (user) => ({
   roleKey: roleKey(user.role),
 });
 
-export const createAuthToken = (user) => jwt.sign({ id: user.id }, SECRET, { expiresIn: "12h" });
+export const createAuthToken = (user) => jwt.sign({ id: user.id }, getSecret(), { expiresIn: "12h" });
 
 export const requireAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!token) return res.status(401).send({ message: "Inicia sesión para continuar." });
-    const payload = jwt.verify(token, SECRET);
+    const payload = jwt.verify(token, getSecret());
     const user = await User.findByPk(payload.id, { include: [Role] });
     if (!user) return res.status(401).send({ message: "La cuenta ya no está disponible." });
     req.user = user;
     return next();
-  } catch {
-    return res.status(401).send({ message: "La sesión no es válida o venció." });
+  } catch (error) {
+    if (["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(error.name)) {
+      return res.status(401).send({ message: "La sesión no es válida o venció." });
+    }
+    return next(error);
   }
 };
 

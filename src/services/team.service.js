@@ -1,58 +1,41 @@
+import { GameTeam } from "../models/GameTeam.js";
+import { Operative } from "../models/Operative.js";
 import { Team } from "../models/Team.js";
 
+const validate = ({ name, logo }) => typeof name === "string" && name.trim() && typeof logo === "string";
+
 export const createTeam = async (req, res) => {
-    const { name, logo } = req.body;
-        if (!name || !logo){
-            return res.status(400).send({ message: "Campos name y logo requeridos" })
-        }
-        const newTeam = await Team.create({
-            name,
-            logo
-        });
-        res.json(newTeam);
+  if (!validate(req.body)) return res.status(400).send({ message: "Campos name y logo requeridos." });
+  const team = await Team.create({ name: req.body.name.trim(), logo: req.body.logo });
+  return res.status(201).send(team);
 };
 
 export const updateTeam = async (req, res) => {
-    const { id } = req.params;
-    const { name, logo } = req.body;
-    if (!name || !logo){
-        return res.status(400).send({ message: "Campos name y logo requeridos" })
-    }
-    const team = await Team.findByPk(id);
-    if(!team){
-        return res.status(404).send({ message: "Equipo no encontrado" })
-    }
-    await team.update({
-        name,
-        logo
-    });
-
-    await team.save();
-
-    res.json(team);
+  if (!validate(req.body)) return res.status(400).send({ message: "Campos name y logo requeridos." });
+  const team = await Team.findByPk(req.params.id);
+  if (!team) return res.status(404).send({ message: "Equipo no encontrado." });
+  await team.update({ name: req.body.name.trim(), logo: req.body.logo });
+  return res.send(team);
 };
 
 export const deleteTeam = async (req, res) => {
-    const { id } = req.params;
-    const team = await Team.findByPk(id);
-    if(!team){
-        return res.status(404).send({ message: "Equipo no encontrado" })
-    }
-    await team.destroy();
-
-    res.send(`Eliminando equipo ${id}`)
+  const team = await Team.findByPk(req.params.id);
+  if (!team) return res.status(404).send({ message: "Equipo no encontrado." });
+  const [operativeCount, gameTeamCount] = await Promise.all([
+    Operative.count({ where: { teamId: team.id } }),
+    GameTeam.count({ where: { teamId: team.id } }),
+  ]);
+  if (operativeCount || gameTeamCount) {
+    return res.status(409).send({ message: "No se puede eliminar un equipo que tiene operativos o aparece en partidas." });
+  }
+  await team.destroy();
+  return res.status(204).end();
 };
 
-export const findTeams = async (req, res) => {
-    const teams = await Team.findAll();
-    res.json(teams);
-};
+export const findTeams = async (_req, res) => res.send(await Team.findAll({ order: [["name", "ASC"]] }));
 
 export const findTeam = async (req, res) => {
-    const { id } = req.params;
-    const team = await Team.findByPk(id);
-    if(!team){
-        return res.status(404).send({ message: "Equipo no encontrado" })
-    }
-    res.json(team);
+  const team = await Team.findByPk(req.params.id);
+  if (!team) return res.status(404).send({ message: "Equipo no encontrado." });
+  return res.send(team);
 };

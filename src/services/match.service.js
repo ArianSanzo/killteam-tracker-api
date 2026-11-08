@@ -1,11 +1,12 @@
+import { Op } from "sequelize";
 import { sequelize } from "../db.js";
 import { Match } from "../models/Match.js";
 import { GameTeam } from "../models/GameTeam.js";
 import { GameOperative } from "../models/GameOperative.js";
+import { PointsTable } from "../models/PointsTable.js";
 import { Operative } from "../models/Operative.js";
 import { OperativeWeapon } from "../models/OperativeWeapons.js";
-import { Team } from "../models/Team.js";
-import { Weapon } from "../models/Weapon.js";
+import { matchDetailIncludes, matchHistoryIncludes } from "./match-query.js";
 import { getRoleKey } from "../middleware/auth.js";
 
 const canManageMatch = (user, match) =>
@@ -55,11 +56,13 @@ const createGameOperatives = async (team, gameTeam, transaction) => {
 };
 
 export const createMatch = async (req, res) => {
-  const { name, date, teams } = req.body;
+  const { teams } = req.body;
+  const name = String(req.body.name ?? "").trim();
+  const date = req.body.date ? new Date(req.body.date) : new Date();
 
-  if (!name || !date || !req.user?.id) {
+  if (!name || Number.isNaN(date.getTime()) || !req.user?.id) {
     return res.status(400).send({
-      message: "Los campos name y date son requeridos",
+      message: "Indica un nombre válido para la partida y una fecha válida.",
     });
   }
 
@@ -68,7 +71,8 @@ export const createMatch = async (req, res) => {
     teams.length !== 2 ||
     teams.some(
       (team) =>
-        !team?.teamId ||
+        !Number.isInteger(Number(team?.teamId)) ||
+        Number(team.teamId) <= 0 ||
         !Array.isArray(team.operatives) ||
         team.operatives.length === 0
     )
@@ -85,7 +89,11 @@ export const createMatch = async (req, res) => {
   if (
     teams.some((team) =>
       team.operatives.some(
-        (selection) => !selection?.operativeId || !selection?.weaponId
+        (selection) =>
+          !Number.isInteger(Number(selection?.operativeId)) ||
+          Number(selection.operativeId) <= 0 ||
+          !Number.isInteger(Number(selection?.weaponId)) ||
+          Number(selection.weaponId) <= 0
       )
     )
   ) {
@@ -140,8 +148,9 @@ export const createMatch = async (req, res) => {
 export const updateMatch = async (req, res) => {
     const { id } = req.params;
     const { name, date } = req.body;
-    if (!name || !date) {
-        return res.status(400).send({ message: "Los campos name y date son requeridos" });
+    const parsedDate = date ? new Date(date) : null;
+    if (typeof name !== "string" || !name.trim() || !parsedDate || Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).send({ message: "Indica un nombre y una fecha válidos." });
     }
 
     const match = await Match.findByPk(id);
@@ -154,8 +163,8 @@ export const updateMatch = async (req, res) => {
     }
 
     await match.update({
-        name,
-        date
+        name: name.trim(),
+        date: parsedDate
     });
 
     await match.save();
@@ -176,35 +185,42 @@ export const deleteMatch = async (req, res) => {
         return res.status(403).send({ message: "No tienes permiso para eliminar esta partida." });
     }
 
-    await match.destroy();
+    await sequelize.transaction(async (transaction) => {
+        const gameTeams = await GameTeam.findAll({
+            attributes: ["id"],
+            where: { matchId: match.id },
+            transaction,
+        });
+        const gameTeamIds = gameTeams.map((gameTeam) => gameTeam.id);
 
-    res.send(`Eliminando partida ${id}`)
+        if (gameTeamIds.length) {
+            const where = { gameTeamId: { [Op.in]: gameTeamIds } };
+            await PointsTable.destroy({ where, transaction });
+            await GameOperative.destroy({ where, transaction });
+        }
+
+        await GameTeam.destroy({ where: { matchId: match.id }, transaction });
+        await match.destroy({ transaction });
+    });
+
+    return res.status(204).end();
 };
 
 export const findMatches = async (req, res) => {
     const where = ["admin", "superadmin"].includes(getRoleKey(req.user?.role))
       ? {}
       : { userId: req.user.id };
-    const matchs = await Match.findAll({ where });
-    res.send(matchs);
+    const matches = await Match.findAll({
+      where,
+      include: matchHistoryIncludes,
+      order: [["date", "DESC"]],
+    });
+    res.send(matches);
 };
 
 export const findMatch = async (req, res) => {
     const { id } = req.params;
-    const match = await Match.findByPk(id, {
-    include: [
-      {
-        model: GameTeam,
-        include: [
-          { model: Team },
-          {
-            model: GameOperative,
-            include: [Operative, Weapon],
-          },
-        ],
-      },
-    ],
-    });
+    const match = await Match.findByPk(id, { include: matchDetailIncludes });
     if (!match) {
         return res.status(404).send({ message: "Partida no encontrada"})
     }

@@ -1,8 +1,29 @@
 import { Operative } from "../models/Operative.js";
+import { OperativeWeapon } from "../models/OperativeWeapons.js";
+import { Weapon } from "../models/Weapon.js";
 
 export const findOperatives = async (req, res) => {
-    const operatives = await Operative.findAll();
-    res.json(operatives);
+  const operatives = await Operative.findAll({
+    include: [
+      {
+        model: OperativeWeapon,
+        include: [Weapon],
+      },
+    ],
+  });
+
+  const result = operatives.map((operativeInstance) => {
+    const operative = operativeInstance.toJSON();
+
+    return {
+      ...operative,
+      weapons: (operative.operative_weapons ?? [])
+        .map((operativeWeapon) => operativeWeapon.weapon)
+        .filter(Boolean),
+    };
+  });
+
+  res.json(result);
 };
 
 export const findOperative = async (req, res) => {

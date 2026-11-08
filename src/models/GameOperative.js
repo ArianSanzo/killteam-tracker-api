@@ -3,6 +3,7 @@ import { sequelize } from '../db.js';
 
 import { Operative } from './Operative.js';
 import { GameTeam } from "./GameTeam.js";
+import { Weapon } from "./Weapon.js";
 
 export const GameOperative = sequelize.define(
     "game_operative",
@@ -17,6 +18,10 @@ export const GameOperative = sequelize.define(
             allowNull: false
         },
         wounds: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        weaponId: {
             type: DataTypes.INTEGER,
             allowNull: false
         },
@@ -48,3 +53,6 @@ GameOperative.belongsTo(Operative, { foreignKey: {name: 'operativeId', allowNull
 
 GameTeam.hasMany(GameOperative, { foreignKey: {name: 'gameTeamId', allowNull: false} }); 
 GameOperative.belongsTo(GameTeam, { foreignKey: {name: 'gameTeamId', allowNull: false} });
+
+Weapon.hasMany(GameOperative, { foreignKey: {name: 'weaponId', allowNull: false} }); 
+GameOperative.belongsTo(Weapon, { foreignKey: {name: 'weaponId', allowNull: false} });

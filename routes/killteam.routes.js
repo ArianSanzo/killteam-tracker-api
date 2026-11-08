@@ -6,6 +6,7 @@ import { createWeapon, deleteWeapon, updateWeapon, findWeapon, findWeapons } fro
 import { createMatch, updateMatch, deleteMatch, findMatch, findMatches } from '../src/services/match.service.js';
 import { createRule, updateRule, deleteRule, findRule, findRules } from '../src/services/rule.service.js';
 import { createAbility, updateAbility, deleteAbility, findAbilities, findAbility } from '../src/services/ability.service.js';
+import { createTeam, updateTeam, deleteTeam, findTeam, findTeams } from '../src/services/team.service.js';
 
 const router = Router();
 
@@ -15,6 +16,11 @@ router.get("/users/:id", findUser);
 router.put("/users/:id", updateUser);
 router.delete("/users/:id", deleteUser);
 
+router.get("/team", findTeams);
+router.post("/team", createTeam);
+router.get("/team/:id", findTeam);
+router.put("/team/:id", updateTeam);
+router.delete("/team/:id", deleteTeam);
 
 router.get("/operatives", findOperatives);
 router.post("/operatives", createOperative);

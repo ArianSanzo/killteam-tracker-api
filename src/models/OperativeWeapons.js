@@ -12,6 +12,16 @@ export const OperativeWeapon = sequelize.define(
             primaryKey: true,
             autoIncrement:true
         },
+        operativeId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            unique: false,
+        },
+        weaponId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            unique: false,
+        },
     },
     { 
         timestamps: false,
@@ -25,8 +35,8 @@ export const OperativeWeapon = sequelize.define(
      }
 );
 
-Operative.hasMany(OperativeWeapon, { foreignKey: {name: 'operativeId', allowNull: false} }); 
-OperativeWeapon.belongsTo(Operative, { foreignKey: {name: 'operativeId', allowNull: false} });
+Operative.hasMany(OperativeWeapon, { foreignKey: 'operativeId' });
+OperativeWeapon.belongsTo(Operative, { foreignKey: 'operativeId' });
 
-Weapon.hasMany(OperativeWeapon, { foreignKey: {name: 'weaponId', allowNull: false} }); 
-OperativeWeapon.belongsTo(Weapon, { foreignKey: {name: 'weaponId', allowNull: false} });
+Weapon.hasMany(OperativeWeapon, { foreignKey: 'weaponId' });
+OperativeWeapon.belongsTo(Weapon, { foreignKey: 'weaponId' });

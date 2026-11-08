@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from "cors";
 
 import { PORT } from './config.js';
 import { sequelize } from './db.js';
@@ -22,17 +23,20 @@ import killteamRoutes from '../routes/killteam.routes.js'
 
 const app = express();
 
+app.use(cors({
+    origin: "http://localhost:5173",
+}));
+app.use(express.json());
+app.use(killteamRoutes);
+
 try {
-    app.use(express.json());
-    app.listen(PORT);
-    app.use(killteamRoutes);
-
     await sequelize.sync();
-
-    console.log(`Server listening on port ${PORT}`);
+    app.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+    });
 
 } catch (error) {
-    console.log('Hubo un error al inicializar el servidor.');
+    console.error('Hubo un error al inicializar el servidor:', error);
 }
 
 

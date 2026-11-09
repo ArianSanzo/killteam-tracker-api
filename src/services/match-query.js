@@ -1,5 +1,6 @@
 import { Ability } from "../models/Ability.js";
 import { GameOperative } from "../models/GameOperative.js";
+import { GameOperativeState } from "../models/GameOperativeState.js";
 import { GameTeam } from "../models/GameTeam.js";
 import { Operative } from "../models/Operative.js";
 import { OperativeAbility } from "../models/OperativeAbilities.js";
@@ -27,6 +28,7 @@ export const matchDetailIncludes = [
         include: [
           { model: Operative, include: [{ model: OperativeAbility, include: [Ability] }] },
           { model: Weapon, include: [{ model: WeaponRule, include: [Rule] }] },
+          GameOperativeState,
         ],
       },
     ],

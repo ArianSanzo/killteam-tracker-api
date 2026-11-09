@@ -59,6 +59,7 @@ router.post("/matches", requireAuth, createMatch);
 router.get("/matches/:matchId/continue", requireAuth, continueMatch);
 router.put("/matches/:matchId/game-teams/:gameTeamId/turning-points/:turningPoint", requireAuth, saveTurningPoint);
 router.patch("/matches/:matchId/game-teams/:gameTeamId/operatives/:gameOperativeId/wounds", requireAuth, updateGameOperativeWounds);
+router.patch("/matches/:matchId/game-teams/:gameTeamId/operatives/:gameOperativeId/turning-points/:turningPoint/wounds", requireAuth, updateGameOperativeWounds);
 router.patch("/matches/:matchId/finished", requireAuth, updateMatchFinished);
 router.get("/matches/:id", requireAuth, findMatch);
 router.put("/matches/:id", requireAuth, updateMatch);

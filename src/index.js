@@ -5,9 +5,11 @@ import morgan from "morgan";
 import { PORT } from './config.js';
 import { sequelize } from './db.js';
 import { initializeAuth } from './services/auth.service.js';
+import { fixPointsTableUniqueness } from './migrations/fix-points-table-uniqueness.js';
 
 import "./models/Ability.js"
 import "./models/GameOperative.js"
+import "./models/GameOperativeState.js"
 import "./models/GameTeam.js"
 import "./models/Match.js"
 import "./models/Operative.js"
@@ -51,6 +53,7 @@ app.use((error, _req, res, _next) => {
 
 try {
     if (!process.env.JWT_SECRET) throw new Error("Configura JWT_SECRET en el entorno antes de iniciar el servidor.");
+    await fixPointsTableUniqueness();
     await sequelize.sync();
     await initializeAuth();
     app.listen(PORT, () => {

@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import { sequelize } from "../db.js";
 import { GameTeam } from "../models/GameTeam.js";
 import { GameOperative } from "../models/GameOperative.js";
+import { GameOperativeState } from "../models/GameOperativeState.js";
 import { Match } from "../models/Match.js";
 import { Operative } from "../models/Operative.js";
 import { PointsTable } from "../models/PointsTable.js";
@@ -88,25 +89,22 @@ export const saveTurningPoint = async (req, res) => {
       }, { transaction });
     }
 
-    if (turningPoint < 4) {
+    let carryValues = { critOp: current.critOp, tacOp: current.tacOp, killOp: current.killOp };
+    for (let nextTurningPoint = turningPoint + 1; nextTurningPoint <= 4; nextTurningPoint += 1) {
       const next = await PointsTable.findOne({
-        where: { gameTeamId: gameTeam.id, turningPoint: turningPoint + 1 },
+        where: { gameTeamId: gameTeam.id, turningPoint: nextTurningPoint },
         transaction,
       });
       if (!next) {
         await PointsTable.create({
           gameTeamId: gameTeam.id,
-          turningPoint: turningPoint + 1,
-          critOp: current.critOp,
-          tacOp: current.tacOp,
-          killOp: current.killOp,
+          turningPoint: nextTurningPoint,
+          ...carryValues,
         }, { transaction });
       } else if (["critOp", "tacOp", "killOp"].every((field) => next[field] === originalValues[field])) {
-        await next.update({
-          critOp: current.critOp,
-          tacOp: current.tacOp,
-          killOp: current.killOp,
-        }, { transaction });
+        await next.update(carryValues, { transaction });
+      } else {
+        break;
       }
     }
     return current;
@@ -136,8 +134,64 @@ export const updateGameOperativeWounds = async (req, res) => {
     return res.status(400).send({ message: `Las heridas deben ser un entero entre 0 y ${maxWounds}.` });
   }
 
-  await gameOperative.update({ wounds });
-  return res.send(gameOperative);
+  const requestedTurningPoint = req.params.turningPoint;
+  if (requestedTurningPoint === undefined) {
+    await gameOperative.update({ wounds });
+    return res.send(gameOperative);
+  }
+
+  const turningPoint = Number(requestedTurningPoint);
+  if (!Number.isInteger(turningPoint) || turningPoint < 1 || turningPoint > 4) {
+    return res.status(400).send({ message: "El turning point debe ser un número entre 1 y 4." });
+  }
+
+  const state = await sequelize.transaction(async (transaction) => {
+    const current = await GameOperativeState.findOne({
+      where: { gameOperativeId: gameOperative.id, turningPoint },
+      transaction,
+    });
+    const previous = turningPoint > 1
+      ? await GameOperativeState.findOne({
+        where: { gameOperativeId: gameOperative.id, turningPoint: { [Op.lt]: turningPoint } },
+        order: [["turningPoint", "DESC"]],
+        transaction,
+      })
+      : null;
+    const inheritedWounds = previous?.wounds ?? gameOperative.wounds;
+    const originalWounds = current?.wounds ?? inheritedWounds;
+
+    if (current) await current.update({ wounds }, { transaction });
+    else await GameOperativeState.create({
+      gameOperativeId: gameOperative.id,
+      turningPoint,
+      wounds,
+    }, { transaction });
+
+    for (let nextTurningPoint = turningPoint + 1; nextTurningPoint <= 4; nextTurningPoint += 1) {
+      const next = await GameOperativeState.findOne({
+        where: { gameOperativeId: gameOperative.id, turningPoint: nextTurningPoint },
+        transaction,
+      });
+      if (!next) {
+        await GameOperativeState.create({
+          gameOperativeId: gameOperative.id,
+          turningPoint: nextTurningPoint,
+          wounds,
+        }, { transaction });
+      } else if (next.wounds === originalWounds) {
+        await next.update({ wounds }, { transaction });
+      } else {
+        break;
+      }
+    }
+
+    return GameOperativeState.findOne({
+      where: { gameOperativeId: gameOperative.id, turningPoint },
+      transaction,
+    });
+  });
+
+  return res.send(state);
 };
 
 export const continueMatch = async (req, res) => {

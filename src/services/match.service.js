@@ -3,6 +3,7 @@ import { sequelize } from "../db.js";
 import { Match } from "../models/Match.js";
 import { GameTeam } from "../models/GameTeam.js";
 import { GameOperative } from "../models/GameOperative.js";
+import { GameOperativeState } from "../models/GameOperativeState.js";
 import { PointsTable } from "../models/PointsTable.js";
 import { Operative } from "../models/Operative.js";
 import { OperativeWeapon } from "../models/OperativeWeapons.js";
@@ -195,6 +196,18 @@ export const deleteMatch = async (req, res) => {
 
         if (gameTeamIds.length) {
             const where = { gameTeamId: { [Op.in]: gameTeamIds } };
+          const gameOperatives = await GameOperative.findAll({
+            attributes: ["id"],
+            where,
+            transaction,
+          });
+          const gameOperativeIds = gameOperatives.map((operative) => operative.id);
+          if (gameOperativeIds.length) {
+            await GameOperativeState.destroy({
+              where: { gameOperativeId: { [Op.in]: gameOperativeIds } },
+              transaction,
+            });
+          }
             await PointsTable.destroy({ where, transaction });
             await GameOperative.destroy({ where, transaction });
         }

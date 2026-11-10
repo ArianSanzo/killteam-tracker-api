@@ -30,6 +30,10 @@ const createGameOperatives = async (team, gameTeam, transaction) => {
       throw invalidSelection("El operativo no pertenece al equipo");
     }
 
+    if (!Number.isSafeInteger(Number(operative.wounds)) || Number(operative.wounds) < 0) {
+      throw invalidSelection("Las heridas del operativo deben ser números enteros iguales o mayores que cero.");
+    }
+
     const weaponLink = await OperativeWeapon.findOne({
       where: { operativeId, weaponId },
       transaction,
@@ -172,6 +176,9 @@ export const updateMatch = async (req, res) => {
   }
   if (!canManageMatch(req.user, match)) {
     return res.status(403).send({ message: "No tienes permiso para editar esta partida." });
+  }
+  if (match.isFinished) {
+    return res.status(409).send({ message: "La partida ya está finalizada y no se puede editar." });
   }
 
   await match.update({

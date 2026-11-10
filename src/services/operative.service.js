@@ -68,7 +68,7 @@ const replaceLinks = async (model, foreignKey, id, ids, transaction) => {
 
 const validateFields = ({ name, wounds, movement, apl, save, img, teamId }) => {
   const missing = (value) => value === undefined || value === null || String(value).trim() === "";
-  const invalidFields =
+  const missingFields =
     typeof name !== "string" ||
     !name.trim() ||
     missing(wounds) ||
@@ -79,7 +79,11 @@ const validateFields = ({ name, wounds, movement, apl, save, img, teamId }) => {
     img === null ||
     !Number.isInteger(Number(teamId)) ||
     Number(teamId) <= 0;
-  return !invalidFields;
+  if (missingFields) return "Completa name, wounds, movement, apl, save, img y teamId.";
+  if (!Number.isSafeInteger(Number(wounds)) || Number(wounds) < 0) {
+    return "Las heridas deben ser números enteros iguales o mayores que cero.";
+  }
+  return "";
 };
 
 export const findOperatives = async (_req, res) => {
@@ -103,8 +107,9 @@ export const findOperative = async (req, res) => {
 
 export const createOperative = async (req, res) => {
   const fields = req.body;
-  if (!validateFields(fields)) {
-    return res.status(400).send({ message: "Completa name, wounds, movement, apl, save, img y teamId." });
+  const validationError = validateFields(fields);
+  if (validationError) {
+    return res.status(400).send({ message: validationError });
   }
 
   const weapons = linksFor(fields, "weaponIds");
@@ -180,8 +185,9 @@ export const createOperative = async (req, res) => {
 
 export const updateOperative = async (req, res) => {
   const fields = req.body;
-  if (!validateFields(fields)) {
-    return res.status(400).send({ message: "Completa name, wounds, movement, apl, save, img y teamId." });
+  const validationError = validateFields(fields);
+  if (validationError) {
+    return res.status(400).send({ message: validationError });
   }
 
   const weapons = linksFor(fields, "weaponIds");

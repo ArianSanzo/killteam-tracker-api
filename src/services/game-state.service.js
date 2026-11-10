@@ -32,7 +32,7 @@ const loadMatchForEdit = async (req, res) => {
     res.status(403).send({ message: "No tienes permiso para editar esta partida." });
     return null;
   }
-  if (match.isFinished && !isPrivileged(req.user)) {
+  if (match.isFinished) {
     res.status(409).send({ message: "La partida ya está finalizada." });
     return null;
   }
@@ -169,8 +169,11 @@ export const updateGameOperativeWounds = async (req, res) => {
     
   const wounds = numericInput(req.body.wounds);
   const maxWounds = Number(gameOperative.operative?.wounds);
-  if (!Number.isInteger(wounds) || wounds < 0 || wounds > maxWounds) {
-    return res.status(400).send({ message: `Las heridas deben ser un entero entre 0 y ${maxWounds}.`});
+  if (!Number.isSafeInteger(wounds) || wounds < 0) {
+    return res.status(400).send({ message: "Las heridas deben ser números enteros iguales o mayores que cero." });
+  }
+  if (wounds > maxWounds) {
+    return res.status(400).send({ message: `Las heridas no pueden superar el máximo de ${maxWounds}.` });
   }
 
   const requestedTurningPoint = req.params.turningPoint;
@@ -271,8 +274,8 @@ export const continueMatch = async (req, res) => {
 
 export const updateMatchFinished = async (req, res) => {
   const finished = req.body.isFinished;
-  if (typeof finished !== "boolean") {
-    return res.status(400).send({ message: "isFinished debe ser true o false." });
+  if (finished !== true) {
+    return res.status(400).send({ message: "Una partida finalizada no se puede reabrir." });
   }
   const match = await loadMatchForEdit(req, res);
   if (!match) return;

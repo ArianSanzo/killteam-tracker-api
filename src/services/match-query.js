@@ -9,8 +9,10 @@ import { Rule } from "../models/Rule.js";
 import { Team } from "../models/Team.js";
 import { Weapon } from "../models/Weapon.js";
 import { WeaponRule } from "../models/WeaponRules.js";
+import { User } from "../models/User.js";
 
 export const matchHistoryIncludes = [
+  { model: User, attributes: ["id", "name"] },
   {
     model: GameTeam,
     include: [Team, PointsTable],

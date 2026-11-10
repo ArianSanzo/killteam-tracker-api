@@ -26,7 +26,10 @@ export const matchDetailIncludes = [
       {
         model: GameOperative,
         include: [
-          { model: Operative, include: [{ model: OperativeAbility, include: [Ability] }] },
+          {
+            model: Operative,
+            include: [{ model: OperativeAbility, include: [Ability] }],
+          },
           { model: Weapon, include: [{ model: WeaponRule, include: [Rule] }] },
           GameOperativeState,
         ],

@@ -9,9 +9,18 @@ import { PointsTable } from "../models/PointsTable.js";
 import { getRoleKey } from "../middleware/auth.js";
 import { matchDetailIncludes } from "./match-query.js";
 
-const isPrivileged = (user) => ["admin", "superadmin"].includes(getRoleKey(user?.role));
-const canEditMatch = (user, match) => isPrivileged(user) || Number(user?.id) === Number(match?.userId);
-const numericInput = (value) => value === null || value === undefined || (typeof value === "string" && !value.trim()) ? Number.NaN : Number(value);
+const isPrivileged = (user) => {
+  return ["admin", "superadmin"].includes(getRoleKey(user?.role));
+}
+  
+const canEditMatch = (user, match) =>{
+  return isPrivileged(user) || Number(user?.id) === Number(match?.userId);
+}
+  
+const numericInput = (value) => {
+  return value === null || value === undefined || (typeof value === "string" && !value.trim()) ? Number.NaN : Number(value);
+}
+  
 
 const loadMatchForEdit = async (req, res) => {
   const match = await Match.findByPk(req.params.matchId);
@@ -42,7 +51,10 @@ export const saveTurningPoint = async (req, res) => {
   const gameTeam = await GameTeam.findOne({
     where: { id: req.params.gameTeamId, matchId: match.id },
   });
-  if (!gameTeam) return res.status(404).send({ message: "Ese equipo no pertenece a la partida." });
+  if (!gameTeam){
+    return res.status(404).send({ message: "Ese equipo no pertenece a la partida." });
+  }
+    
 
   const fields = ["critOp", "tacOp", "killOp"];
   const values = {};
@@ -51,7 +63,7 @@ export const saveTurningPoint = async (req, res) => {
     if (value !== undefined) {
       const numericValue = numericInput(value);
       if (!Number.isInteger(numericValue) || numericValue < 0) {
-        return res.status(400).send({ message: `${field} debe ser un entero igual o mayor que cero.` });
+        return res.status(400).send({message: `${field} debe ser un entero igual o mayor que cero.`,});
       }
       values[field] = numericValue;
     }
@@ -62,13 +74,17 @@ export const saveTurningPoint = async (req, res) => {
       where: { gameTeamId: gameTeam.id, turningPoint },
       transaction,
     });
-    const previous = turningPoint > 1
-      ? await PointsTable.findOne({
-        where: { gameTeamId: gameTeam.id, turningPoint: { [Op.lt]: turningPoint } },
-        order: [["turningPoint", "DESC"]],
-        transaction,
-      })
-      : null;
+    const previous =
+      turningPoint > 1
+        ? await PointsTable.findOne({
+            where: {
+              gameTeamId: gameTeam.id,
+              turningPoint: { [Op.lt]: turningPoint },
+            },
+            order: [["turningPoint", "DESC"]],
+            transaction,
+          })
+        : null;
     const priorValues = {
       critOp: previous?.critOp ?? 0,
       tacOp: previous?.tacOp ?? 0,
@@ -81,27 +97,45 @@ export const saveTurningPoint = async (req, res) => {
     if (current) {
       await current.update(values, { transaction });
     } else {
-      current = await PointsTable.create({
-        gameTeamId: gameTeam.id,
-        turningPoint,
-        ...priorValues,
-        ...values,
-      }, { transaction });
+      current = await PointsTable.create(
+        {
+          gameTeamId: gameTeam.id,
+          turningPoint,
+          ...priorValues,
+          ...values,
+        },
+        { transaction },
+      );
     }
 
-    let carryValues = { critOp: current.critOp, tacOp: current.tacOp, killOp: current.killOp };
-    for (let nextTurningPoint = turningPoint + 1; nextTurningPoint <= 4; nextTurningPoint += 1) {
+    let carryValues = {
+      critOp: current.critOp,
+      tacOp: current.tacOp,
+      killOp: current.killOp,
+    };
+    for (
+      let nextTurningPoint = turningPoint + 1;
+      nextTurningPoint <= 4;
+      nextTurningPoint += 1
+    ) {
       const next = await PointsTable.findOne({
         where: { gameTeamId: gameTeam.id, turningPoint: nextTurningPoint },
         transaction,
       });
       if (!next) {
-        await PointsTable.create({
-          gameTeamId: gameTeam.id,
-          turningPoint: nextTurningPoint,
-          ...carryValues,
-        }, { transaction });
-      } else if (["critOp", "tacOp", "killOp"].every((field) => next[field] === originalValues[field])) {
+        await PointsTable.create(
+          {
+            gameTeamId: gameTeam.id,
+            turningPoint: nextTurningPoint,
+            ...carryValues,
+          },
+          { transaction },
+        );
+      } else if (
+        ["critOp", "tacOp", "killOp"].every(
+          (field) => next[field] === originalValues[field],
+        )
+      ) {
         await next.update(carryValues, { transaction });
       } else {
         break;
@@ -120,18 +154,23 @@ export const updateGameOperativeWounds = async (req, res) => {
   const gameTeam = await GameTeam.findOne({
     where: { id: req.params.gameTeamId, matchId: match.id },
   });
-  if (!gameTeam) return res.status(404).send({ message: "Ese equipo no pertenece a la partida." });
+  if (!gameTeam){
+    return res.status(404).send({ message: "Ese equipo no pertenece a la partida." });
+  }
+    
 
   const gameOperative = await GameOperative.findOne({
     where: { id: req.params.gameOperativeId, gameTeamId: gameTeam.id },
     include: [Operative],
   });
-  if (!gameOperative) return res.status(404).send({ message: "El operativo no pertenece al equipo de la partida." });
-
+  if (!gameOperative){
+    return res.status(404).send({ message: "El operativo no pertenece al equipo de la partida." });
+  }
+    
   const wounds = numericInput(req.body.wounds);
   const maxWounds = Number(gameOperative.operative?.wounds);
   if (!Number.isInteger(wounds) || wounds < 0 || wounds > maxWounds) {
-    return res.status(400).send({ message: `Las heridas deben ser un entero entre 0 y ${maxWounds}.` });
+    return res.status(400).send({ message: `Las heridas deben ser un entero entre 0 y ${maxWounds}.`});
   }
 
   const requestedTurningPoint = req.params.turningPoint;
@@ -150,34 +189,52 @@ export const updateGameOperativeWounds = async (req, res) => {
       where: { gameOperativeId: gameOperative.id, turningPoint },
       transaction,
     });
-    const previous = turningPoint > 1
-      ? await GameOperativeState.findOne({
-        where: { gameOperativeId: gameOperative.id, turningPoint: { [Op.lt]: turningPoint } },
-        order: [["turningPoint", "DESC"]],
-        transaction,
-      })
-      : null;
+    const previous =
+      turningPoint > 1
+        ? await GameOperativeState.findOne({
+            where: {
+              gameOperativeId: gameOperative.id,
+              turningPoint: { [Op.lt]: turningPoint },
+            },
+            order: [["turningPoint", "DESC"]],
+            transaction,
+          })
+        : null;
     const inheritedWounds = previous?.wounds ?? gameOperative.wounds;
     const originalWounds = current?.wounds ?? inheritedWounds;
 
     if (current) await current.update({ wounds }, { transaction });
-    else await GameOperativeState.create({
-      gameOperativeId: gameOperative.id,
-      turningPoint,
-      wounds,
-    }, { transaction });
+    else
+      await GameOperativeState.create(
+        {
+          gameOperativeId: gameOperative.id,
+          turningPoint,
+          wounds,
+        },
+        { transaction },
+      );
 
-    for (let nextTurningPoint = turningPoint + 1; nextTurningPoint <= 4; nextTurningPoint += 1) {
+    for (
+      let nextTurningPoint = turningPoint + 1;
+      nextTurningPoint <= 4;
+      nextTurningPoint += 1
+    ) {
       const next = await GameOperativeState.findOne({
-        where: { gameOperativeId: gameOperative.id, turningPoint: nextTurningPoint },
+        where: {
+          gameOperativeId: gameOperative.id,
+          turningPoint: nextTurningPoint,
+        },
         transaction,
       });
       if (!next) {
-        await GameOperativeState.create({
-          gameOperativeId: gameOperative.id,
-          turningPoint: nextTurningPoint,
-          wounds,
-        }, { transaction });
+        await GameOperativeState.create(
+          {
+            gameOperativeId: gameOperative.id,
+            turningPoint: nextTurningPoint,
+            wounds,
+          },
+          { transaction },
+        );
       } else if (next.wounds === originalWounds) {
         await next.update({ wounds }, { transaction });
       } else {
@@ -195,12 +252,20 @@ export const updateGameOperativeWounds = async (req, res) => {
 };
 
 export const continueMatch = async (req, res) => {
-  const match = await Match.findByPk(req.params.matchId, { include: matchDetailIncludes });
-  if (!match) return res.status(404).send({ message: "Partida no encontrada." });
+  const match = await Match.findByPk(req.params.matchId, {
+    include: matchDetailIncludes,
+  });
+  if (!match){
+    return res.status(404).send({ message: "Partida no encontrada." });
+  }
+    
   if (Number(match.userId) !== Number(req.user.id)) {
     return res.status(403).send({ message: "Solo puedes continuar tus propias partidas." });
   }
-  if (match.isFinished) return res.status(409).send({ message: "La partida ya está finalizada." });
+  if (match.isFinished){
+    return res.status(409).send({ message: "La partida ya está finalizada." });
+  }
+    
   return res.send(match);
 };
 

@@ -3,7 +3,9 @@ import { User } from "../models/User.js";
 import { Role } from "../models/Role.js";
 
 const getSecret = () => {
-  if (!process.env.JWT_SECRET) throw new Error("Configura JWT_SECRET en el entorno antes de iniciar el servidor.");
+  if (!process.env.JWT_SECRET) {
+    throw new Error("Configura JWT_SECRET en el entorno antes de iniciar el servidor.");
+  } 
   return process.env.JWT_SECRET;
 };
 
@@ -29,10 +31,14 @@ export const createAuthToken = (user) => jwt.sign({ id: user.id }, getSecret(), 
 export const requireAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-    if (!token) return res.status(401).send({ message: "Inicia sesión para continuar." });
+    if (!token) {
+      return res.status(401).send({ message: "Inicia sesión para continuar." });
+    } 
     const payload = jwt.verify(token, getSecret());
     const user = await User.findByPk(payload.id, { include: [Role] });
-    if (!user) return res.status(401).send({ message: "La cuenta ya no está disponible." });
+    if (!user) {
+      return res.status(401).send({ message: "La cuenta ya no está disponible." });
+    } 
     req.user = user;
     return next();
   } catch (error) {

@@ -25,8 +25,8 @@ export const WeaponRule = sequelize.define(
      }
 );
 
-Weapon.hasMany(WeaponRule, { foreignKey: {name: 'weaponId', allowNull: false} }); 
-WeaponRule.belongsTo(Weapon, { foreignKey: {name: 'weaponId', allowNull: false} });
+Weapon.hasMany(WeaponRule, { foreignKey: {name: 'weaponId', allowNull: false, unique: false} }); 
+WeaponRule.belongsTo(Weapon, { foreignKey: {name: 'weaponId', allowNull: false, unique: false} });
 
-Rule.hasMany(WeaponRule, { foreignKey: {name: 'ruleId', allowNull: false} }); 
-WeaponRule.belongsTo(Rule, { foreignKey: {name: 'ruleId', allowNull: false} });
+Rule.hasMany(WeaponRule, { foreignKey: {name: 'ruleId', allowNull: false, unique: false} }); 
+WeaponRule.belongsTo(Rule, { foreignKey: {name: 'ruleId', allowNull: false, unique: false} });

@@ -25,8 +25,8 @@ export const OperativeAbility = sequelize.define(
      }
 );
 
-Operative.hasMany(OperativeAbility, { foreignKey: {name: 'operativeId', allowNull: false} }); 
-OperativeAbility.belongsTo(Operative, { foreignKey: {name: 'operativeId', allowNull: false} });
+Operative.hasMany(OperativeAbility, { foreignKey: {name: 'operativeId', allowNull: false, unique: false} }); 
+OperativeAbility.belongsTo(Operative, { foreignKey: {name: 'operativeId', allowNull: false, unique: false} });
 
-Ability.hasMany(OperativeAbility, { foreignKey: {name: 'abilityId', allowNull: false} }); 
-OperativeAbility.belongsTo(Ability, { foreignKey: {name: 'abilityId', allowNull: false} });
+Ability.hasMany(OperativeAbility, { foreignKey: {name: 'abilityId', allowNull: false, unique: false} }); 
+OperativeAbility.belongsTo(Ability, { foreignKey: {name: 'abilityId', allowNull: false, unique: false} });

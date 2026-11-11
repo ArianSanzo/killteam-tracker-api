@@ -104,7 +104,7 @@ export const saveTurningPoint = async (req, res) => {
           ...priorValues,
           ...values,
         },
-        { transaction },
+        { transaction }
       );
     }
 

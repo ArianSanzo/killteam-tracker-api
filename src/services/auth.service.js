@@ -73,7 +73,7 @@ export const login = async (req, res) => {
   if (!user) {
     return res.status(401).send({ message: "Email o contraseña incorrectos." });
   }
-    
+
   if (!(await verifyPassword(password, user.password))) {
     return res.status(401).send({ message: "Email o contraseña incorrectos." });
   }
@@ -92,13 +92,13 @@ export const register = async (req, res) => {
     password.length < 8 ||
     Buffer.byteLength(password, "utf8") > 72
   ) {
-    return res.status(400).send({ message: "Indica un nombre, un email válido y una contraseña de 8 a 72 bytes." });
+    return res.status(400).send({ message: "Indica un nombre, un email válido y una contraseña de 8 a 72 caracteres." });
   }
   const existing = await User.findOne({ where: { email } });
   if (existing) {
     return res.status(409).send({ message: "Ya existe una cuenta con ese email." });
   }
-    
+
   const roles = await Role.findAll();
   const role = roles.find((item) =>
     ["user", "usuario"].includes(normalizeRole(item.name)),
@@ -106,7 +106,7 @@ export const register = async (req, res) => {
   if (!role) {
     return res.status(500).send({ message: "No está configurado el rol de usuario." });
   }
-    
+
   try {
     const user = await User.create({
       name,
@@ -118,7 +118,7 @@ export const register = async (req, res) => {
     return res.status(201).send({ token: createAuthToken(user), user: toPublicUser(user) });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
-       return res.status(409).send({ message: "Ese nombre o email ya está en uso." });
+      return res.status(409).send({ message: "Ese nombre o email ya está en uso." });
     }
   }
 };
@@ -142,14 +142,14 @@ export const updateCurrentUser = async (req, res) => {
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       return res.status(400).send({ message: "Indica un email válido." });
     }
-      
+
     changes.email = email;
   }
 
   if (req.body.password !== undefined) {
     const password = String(req.body.password);
     if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
-      return res.status(400).send({ message: "La nueva contraseña debe tener entre 8 y 72 bytes.",});
+      return res.status(400).send({ message: "La nueva contraseña debe tener entre 8 y 72 bytes.", });
     }
     changes.password = password;
   }
@@ -157,7 +157,7 @@ export const updateCurrentUser = async (req, res) => {
   if (!Object.keys(changes).length) {
     return res.status(400).send({ message: "Indica al menos un dato para actualizar." });
   }
-    
+
   if (
     (changes.email || changes.password) &&
     !(await verifyPassword(String(currentPassword ?? ""), req.user.password))
@@ -179,7 +179,7 @@ export const updateCurrentUser = async (req, res) => {
   }
   if (changes.password) {
     changes.password = await hashPassword(changes.password);
-  } 
+  }
 
   try {
     await req.user.update(changes);
